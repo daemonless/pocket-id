@@ -1,0 +1,33 @@
+#!/bin/sh
+# Start Pocket ID; /init has already dropped privileges to the run user.
+
+export HOME=/config
+export APP_ENV="${APP_ENV:-production}"
+export HOST="${HOST:-0.0.0.0}"
+export PORT="${PORT:-1411}"
+export ANALYTICS_DISABLED="${ANALYTICS_DISABLED:-true}"
+
+mkdir -p /config/data
+
+# ENCRYPTION_KEY encrypts stored OIDC/SMTP/LDAP secrets and derives JWK key-encryption
+# keys, so it must stay stable across restarts. Generate once into /config/secrets.env
+# when neither ENCRYPTION_KEY nor ENCRYPTION_KEY_FILE is provided.
+secrets_file=/config/secrets.env
+if [ -z "${ENCRYPTION_KEY}" ] && [ -z "${ENCRYPTION_KEY_FILE}" ]; then
+    if [ ! -f "${secrets_file}" ]; then
+        (
+            umask 077
+            printf 'ENCRYPTION_KEY=%s\n' "$(openssl rand -base64 32)" > "${secrets_file}"
+        )
+        echo "[pocket-id] Generated ENCRYPTION_KEY in ${secrets_file}"
+    fi
+    stored_key=$(sed -n 's/^ENCRYPTION_KEY=//p' "${secrets_file}")
+    : "${ENCRYPTION_KEY:=${stored_key}}"
+    export ENCRYPTION_KEY
+fi
+
+# Pocket ID resolves default relative paths (data/pocket-id.db, data/uploads,
+# data/GeoLite2-City.mmdb) against the current working directory.
+cd /config || exit 1
+
+exec /usr/local/bin/pocket-id

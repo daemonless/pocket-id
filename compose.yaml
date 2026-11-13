@@ -1,0 +1,93 @@
+name: pocket-id
+
+x-daemonless:
+  title: "Pocket ID"
+  icon: ":material-fingerprint:"
+  category: "Infrastructure"
+  description: "Simple OpenID Connect and OAuth 2.0 provider that lets users sign in to your applications with passkeys."
+  upstream_url: "https://github.com/pocket-id/pocket-id"
+  web_url: "https://pocket-id.org/"
+  freshports_url: "https://www.freshports.org/www/pocket-id/"
+  user: "bsd"
+  mlock: false
+  appjail: true
+  community: "Discord:https://discord.gg/Kb9tkhecZT"
+
+  docs:
+    env:
+      PUID: "User ID for the application process"
+      PGID: "Group ID for the application process"
+      TZ: "Timezone for the container"
+      APP_URL:
+        desc: "Public URL of Pocket ID as reached by the browser (passkeys bind to this origin)"
+        public_url: true
+        level: primary
+      ENCRYPTION_KEY:
+        desc: "Key used to encrypt stored secrets (`openssl rand -base64 32`); generated into /config/secrets.env on first start if unset"
+        optional: true
+        level: advanced
+      TRUST_PROXY:
+        desc: "Trust X-Forwarded-* headers when running behind a reverse proxy"
+        optional: true
+        level: options
+      DB_CONNECTION_STRING:
+        desc: "Database connection string (defaults to SQLite at data/pocket-id.db under /config, or postgres://user:pass@host:5432/dbname)"
+        optional: true
+        level: advanced
+      MAXMIND_LICENSE_KEY:
+        desc: "MaxMind license key for automatic GeoLite2 City IP geolocation database downloads"
+        optional: true
+        level: options
+      ANALYTICS_DISABLED:
+        desc: "Disable outbound usage heartbeat to Pocket ID (defaults to true in this image)"
+        optional: true
+        level: advanced
+    volumes:
+      /config: "Persistent secrets (/config/secrets.env) and application data (/config/data)"
+    ports:
+      1411: "Web UI and OIDC provider"
+
+  notes: |
+    ## First start and setup
+
+    Set `APP_URL` to the exact URL browsers use to reach Pocket ID (for example
+    `https://auth.example.com`), because WebAuthn passkeys are bound to that
+    domain and require HTTPS outside `localhost`. When running behind a reverse
+    proxy, set `TRUST_PROXY=true`.
+
+    Open `<APP_URL>/setup` on first boot to create the initial administrator
+    account and register your passkey.
+
+    ## Encryption key and data
+
+    If neither `ENCRYPTION_KEY` nor `ENCRYPTION_KEY_FILE` is set on first start,
+    the launcher generates a 32-byte key (`openssl rand -base64 32`) and stores
+    it in `/config/secrets.env` (mode `0600`). Back up `/config`: losing
+    `ENCRYPTION_KEY` makes encrypted fields in the database unreadable.
+
+    By default Pocket ID uses an embedded SQLite database at
+    `/config/data/pocket-id.db` and stores uploads in `/config/data/uploads`.
+    To use PostgreSQL instead, set `DB_CONNECTION_STRING` to a
+    `postgres://user:password@host:5432/pocket_id` URL.
+
+    Pocket ID also binds an internal actor listener on port `1414` for
+    multi-node clustering; single-instance deployments do not need to publish it.
+
+services:
+  pocket-id:
+    image: ghcr.io/daemonless/pocket-id:latest
+    container_name: pocket-id
+    restart: unless-stopped
+
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=UTC
+      - APP_URL=http://localhost:1411
+      - TRUST_PROXY=false
+
+    volumes:
+      - /path/to/containers/pocket-id:/config
+
+    ports:
+      - "1411:1411"

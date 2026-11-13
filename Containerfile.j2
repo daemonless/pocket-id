@@ -1,0 +1,71 @@
+ARG BASE_VERSION=15.1
+FROM ghcr.io/daemonless/base-exec:${BASE_VERSION}
+
+ARG FREEBSD_ARCH=amd64
+ARG PACKAGES="ca_root_nss"
+ARG APP_VERSION=""
+ARG UPSTREAM_URL="https://api.github.com/repos/pocket-id/pocket-id/releases/latest"
+ARG UPSTREAM_JQ=".tag_name"
+# FreeBSD fetch(1) exits 1 on /healthz's 204 No Content; OIDC discovery returns 200.
+ARG HEALTHCHECK_ENDPOINT="http://127.0.0.1:1411/.well-known/openid-configuration"
+
+ENV HEALTHCHECK_URL="${HEALTHCHECK_ENDPOINT}"
+
+LABEL org.opencontainers.image.title="{{ title }}" \
+      org.opencontainers.image.description="{{ description }}" \
+      org.opencontainers.image.source="{{ repo_url }}" \
+      org.opencontainers.image.url="{{ web_url }}" \
+      org.opencontainers.image.documentation="https://pocket-id.org/docs" \
+      org.opencontainers.image.licenses="BSD-2-Clause" \
+      org.opencontainers.image.vendor="daemonless" \
+      org.opencontainers.image.authors="daemonless" \
+      io.daemonless.category="{{ category }}" \
+{%- if ports %}
+      io.daemonless.port="{{ ports[0].port }}" \
+{%- endif %}
+{%- if volumes %}
+      io.daemonless.volumes="{{ volumes | map(attribute='path') | join(',') }}" \
+{%- endif %}
+      io.daemonless.arch="${FREEBSD_ARCH}" \
+      io.daemonless.upstream-url="${UPSTREAM_URL}" \
+      io.daemonless.upstream-jq="${UPSTREAM_JQ}" \
+      io.daemonless.healthcheck-url="${HEALTHCHECK_ENDPOINT}" \
+      io.daemonless.packages="${PACKAGES}"
+
+# Install root certificates for outbound OIDC, SMTP, and MaxMind HTTPS calls
+RUN pkg update && \
+    pkg install -y ${PACKAGES} && \
+    pkg clean -ay && \
+    rm -rf /var/cache/pkg/* /var/db/pkg/repos/*
+
+# Download and verify the official Pocket ID FreeBSD release binary
+RUN set -eux; \
+    VERSION="${APP_VERSION}"; \
+    if [ -z "${VERSION}" ]; then \
+        VERSION=$(fetch -qo - "${UPSTREAM_URL}" | jq -r "${UPSTREAM_JQ}"); \
+    fi; \
+    test -n "${VERSION}" && [ "${VERSION}" != "null" ]; \
+    case "${FREEBSD_ARCH}" in \
+        aarch64) BIN_ARCH="arm64" ;; \
+        *) BIN_ARCH="${FREEBSD_ARCH}" ;; \
+    esac; \
+    ASSET="pocket-id_freebsd_${BIN_ARCH}"; \
+    BASE_DL="https://github.com/pocket-id/pocket-id/releases/download/${VERSION}"; \
+    fetch -qo "/tmp/${ASSET}" "${BASE_DL}/${ASSET}"; \
+    fetch -qo /tmp/checksums.txt "${BASE_DL}/checksums.txt"; \
+    EXPECTED_SHA=$(awk -v f="${ASSET}" '$2 == f { print $1 }' /tmp/checksums.txt); \
+    ACTUAL_SHA=$(sha256 -q "/tmp/${ASSET}"); \
+    test -n "${EXPECTED_SHA}" && [ "${EXPECTED_SHA}" = "${ACTUAL_SHA}" ]; \
+    install -m 0755 "/tmp/${ASSET}" /usr/local/bin/pocket-id; \
+    mkdir -p /app /config/data; \
+    printf '%s\n' "${VERSION}" > /app/version; \
+    chown -R bsd:bsd /config; \
+    rm -f "/tmp/${ASSET}" /tmp/checksums.txt
+
+COPY root/ /
+RUN chmod +x /daemonless/libexec/pocket-id
+
+CMD ["/daemonless/libexec/pocket-id"]
+
+EXPOSE 1411
+VOLUME /config

@@ -1,0 +1,24 @@
+# dbuild configuration file
+# Full reference: https://github.com/daemonless/dbuild
+
+build:
+  architectures:
+    - amd64
+    - aarch64
+  variants:
+    - tag: latest
+      containerfile: Containerfile
+      default: true
+      tag_desc: "Official upstream Pocket ID FreeBSD binary (tracks latest release)."
+    - tag: pkg
+      containerfile: Containerfile.pkg
+    - tag: pkg-latest
+      containerfile: Containerfile.pkg
+      args:
+        BASE_VERSION: "15.1-latest"
+
+cit:
+  mode: screenshot
+  port: 1411
+  health: /healthz
+  ready: "Server listening"
