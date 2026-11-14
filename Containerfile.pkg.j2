@@ -42,6 +42,7 @@ RUN pkg update && \
 COPY root/ /
 RUN chmod +x /daemonless/libexec/pocket-id
 
+WORKDIR /config
 CMD ["/daemonless/libexec/pocket-id"]
 
 EXPOSE 1411

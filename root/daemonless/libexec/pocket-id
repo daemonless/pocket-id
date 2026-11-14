@@ -1,33 +1,76 @@
 #!/bin/sh
-# Start Pocket ID; /init has already dropped privileges to the run user.
+# Start Pocket ID (or run a Pocket ID CLI subcommand); /init drops to the run
+# user during container boot, and dsu drops root under direct podman exec.
+
+if [ "$(id -u)" -eq 0 ]; then
+    run_user="${DAEMONLESS_USER:-bsd}"
+    run_home=$(getent passwd "${run_user}" | cut -d: -f6)
+    export HOME="${run_home:-/config}" USER="${run_user}" LOGNAME="${run_user}"
+    exec dsu "${run_user}" "$0" "$@"
+fi
 
 export HOME=/config
-export APP_ENV="${APP_ENV:-production}"
-export HOST="${HOST:-0.0.0.0}"
-export PORT="${PORT:-1411}"
-export ANALYTICS_DISABLED="${ANALYTICS_DISABLED:-true}"
-
 mkdir -p /config/data
 
-# ENCRYPTION_KEY encrypts stored OIDC/SMTP/LDAP secrets and derives JWK key-encryption
-# keys, so it must stay stable across restarts. Generate once into /config/secrets.env
-# when neither ENCRYPTION_KEY nor ENCRYPTION_KEY_FILE is provided.
+# Pocket ID defaults APP_ENV=production, HOST=0.0.0.0, PORT=1411, and autoloads
+# .env from the working directory (/config/.env) for unset variables. Only set
+# ANALYTICS_DISABLED=true when neither the environment nor /config/.env sets it.
+env_file=/config/.env
+if [ -z "${ANALYTICS_DISABLED}" ] && \
+   ! grep -Eq '^[[:space:]]*(export[[:space:]]+)?ANALYTICS_DISABLED=' "${env_file}" 2>/dev/null; then
+    export ANALYTICS_DISABLED=true
+fi
+
+# ENCRYPTION_KEY encrypts stored OIDC/SMTP/LDAP secrets and derives JWK
+# key-encryption keys, so it must stay stable across restarts. Migrate an
+# existing /config/secrets.env key into /config/.env first; only generate a new
+# key when neither the environment, /config/.env, nor /config/secrets.env has one.
 secrets_file=/config/secrets.env
-if [ -z "${ENCRYPTION_KEY}" ] && [ -z "${ENCRYPTION_KEY_FILE}" ]; then
-    if [ ! -f "${secrets_file}" ]; then
+if [ -z "${ENCRYPTION_KEY}" ] && [ -z "${ENCRYPTION_KEY_FILE}" ] && \
+   ! grep -Eq '^[[:space:]]*(export[[:space:]]+)?ENCRYPTION_KEY(_FILE)?=' "${env_file}" 2>/dev/null; then
+    migrated_key=""
+    if [ -f "${secrets_file}" ]; then
+        migrated_key=$(sed -n 's/^ENCRYPTION_KEY=//p' "${secrets_file}" | head -n 1)
+    fi
+
+    if [ -n "${migrated_key}" ]; then
+        key_value="${migrated_key}"
+        key_action="Migrated ENCRYPTION_KEY from ${secrets_file}"
+    else
+        key_value=$(openssl rand -base64 32)
+        key_action="Generated ENCRYPTION_KEY"
+    fi
+
+    if [ ! -e "${env_file}" ]; then
         (
             umask 077
-            printf 'ENCRYPTION_KEY=%s\n' "$(openssl rand -base64 32)" > "${secrets_file}"
+            printf 'ENCRYPTION_KEY=%s\n' "${key_value}" > "${env_file}"
         )
-        echo "[pocket-id] Generated ENCRYPTION_KEY in ${secrets_file}"
+        echo "[pocket-id] ${key_action} into ${env_file}" >&2
+    elif [ -w "${env_file}" ]; then
+        chmod 600 "${env_file}" 2>/dev/null || true
+        if [ -s "${env_file}" ]; then
+            printf '\nENCRYPTION_KEY=%s\n' "${key_value}" >> "${env_file}"
+        else
+            printf 'ENCRYPTION_KEY=%s\n' "${key_value}" > "${env_file}"
+        fi
+        echo "[pocket-id] ${key_action} into ${env_file}" >&2
+    else
+        # Read-only /config/.env without a key: persist in /config/secrets.env.
+        if [ -z "${migrated_key}" ] && [ ! -f "${secrets_file}" ]; then
+            (
+                umask 077
+                printf 'ENCRYPTION_KEY=%s\n' "${key_value}" > "${secrets_file}"
+            )
+            echo "[pocket-id] Generated ENCRYPTION_KEY in ${secrets_file}" >&2
+        fi
+        ENCRYPTION_KEY="${key_value}"
+        export ENCRYPTION_KEY
     fi
-    stored_key=$(sed -n 's/^ENCRYPTION_KEY=//p' "${secrets_file}")
-    : "${ENCRYPTION_KEY:=${stored_key}}"
-    export ENCRYPTION_KEY
 fi
 
 # Pocket ID resolves default relative paths (data/pocket-id.db, data/uploads,
-# data/GeoLite2-City.mmdb) against the current working directory.
+# data/GeoLite2-City.mmdb) and .env against the current working directory.
 cd /config || exit 1
 
-exec /usr/local/bin/pocket-id
+exec /usr/local/bin/pocket-id "$@"

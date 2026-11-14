@@ -11,6 +11,7 @@ x-daemonless:
   user: "bsd"
   mlock: false
   appjail: true
+  cli: [pocket-id]
   community: "Discord:https://discord.gg/Kb9tkhecZT"
 
   docs:
@@ -23,7 +24,7 @@ x-daemonless:
         public_url: true
         level: primary
       ENCRYPTION_KEY:
-        desc: "Key used to encrypt stored secrets (`openssl rand -base64 32`); generated into /config/secrets.env on first start if unset"
+        desc: "Key used to encrypt stored secrets (`openssl rand -base64 32`); generated into /config/.env on first start if unset"
         optional: true
         level: advanced
       TRUST_PROXY:
@@ -43,7 +44,7 @@ x-daemonless:
         optional: true
         level: advanced
     volumes:
-      /config: "Persistent secrets (/config/secrets.env) and application data (/config/data)"
+      /config: "Persistent configuration (/config/.env) and application data (/config/data)"
     ports:
       1411: "Web UI and OIDC provider"
 
@@ -58,17 +59,25 @@ x-daemonless:
     Open `<APP_URL>/setup` on first boot to create the initial administrator
     account and register your passkey.
 
-    ## Encryption key and data
+    ## Encryption key, data, and CLI recovery
 
-    If neither `ENCRYPTION_KEY` nor `ENCRYPTION_KEY_FILE` is set on first start,
-    the launcher generates a 32-byte key (`openssl rand -base64 32`) and stores
-    it in `/config/secrets.env` (mode `0600`). Back up `/config`: losing
-    `ENCRYPTION_KEY` makes encrypted fields in the database unreadable.
+    If neither `ENCRYPTION_KEY` nor `ENCRYPTION_KEY_FILE` is set in the
+    environment or `/config/.env` on first start, the launcher generates a
+    32-byte key (`openssl rand -base64 32`) and stores it in `/config/.env`
+    (mode `0600`). Back up `/config`: losing `ENCRYPTION_KEY` makes encrypted
+    fields in the database unreadable.
 
     By default Pocket ID uses an embedded SQLite database at
     `/config/data/pocket-id.db` and stores uploads in `/config/data/uploads`.
     To use PostgreSQL instead, set `DB_CONNECTION_STRING` to a
     `postgres://user:password@host:5432/pocket_id` URL.
+
+    Pocket ID CLI subcommands (such as account recovery when a passkey is lost)
+    run in `/config` as `bsd` via `podman exec`:
+
+    ```sh
+    podman exec pocket-id pocket-id one-time-access-token <username-or-email>
+    ```
 
     Pocket ID also binds an internal actor listener on port `1414` for
     multi-node clustering; single-instance deployments do not need to publish it.

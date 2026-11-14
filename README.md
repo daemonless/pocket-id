@@ -43,7 +43,7 @@ services:
       - TZ=UTC  # Timezone for the container
       - APP_URL=http://localhost:1411  # Public URL of Pocket ID as reached by the browser (passkeys bind to this origin)
       - TRUST_PROXY=false  # Trust X-Forwarded-* headers when running behind a reverse proxy
-      # - ENCRYPTION_KEY=  # Key used to encrypt stored secrets (`openssl rand -base64 32`); generated into /config/secrets.env on first start if unset
+      # - ENCRYPTION_KEY=  # Key used to encrypt stored secrets (`openssl rand -base64 32`); generated into /config/.env on first start if unset
       # - DB_CONNECTION_STRING=  # Database connection string (defaults to SQLite at data/pocket-id.db under /config, or postgres://user:pass@host:5432/dbname)
       # - MAXMIND_LICENSE_KEY=  # MaxMind license key for automatic GeoLite2 City IP geolocation database downloads
       # - ANALYTICS_DISABLED=  # Disable outbound usage heartbeat to Pocket ID (defaults to true in this image)
@@ -156,7 +156,7 @@ Open `http://<server>:1411` from another machine (the server's own browser can't
 | `TZ` | `UTC` | Timezone for the container |
 | `APP_URL` | `http://localhost:1411` | Public URL of Pocket ID as reached by the browser (passkeys bind to this origin) |
 | `TRUST_PROXY` | `false` | Trust X-Forwarded-* headers when running behind a reverse proxy |
-| `ENCRYPTION_KEY` | `<ENCRYPTION_KEY>` | Key used to encrypt stored secrets (`openssl rand -base64 32`); generated into /config/secrets.env on first start if unset |
+| `ENCRYPTION_KEY` | `<ENCRYPTION_KEY>` | Key used to encrypt stored secrets (`openssl rand -base64 32`); generated into /config/.env on first start if unset |
 | `DB_CONNECTION_STRING` | `` | Database connection string (defaults to SQLite at data/pocket-id.db under /config, or postgres://user:pass@host:5432/dbname) |
 | `MAXMIND_LICENSE_KEY` | `<MAXMIND_LICENSE_KEY>` | MaxMind license key for automatic GeoLite2 City IP geolocation database downloads |
 | `ANALYTICS_DISABLED` | `` | Disable outbound usage heartbeat to Pocket ID (defaults to true in this image) |
@@ -165,7 +165,7 @@ Open `http://<server>:1411` from another machine (the server's own browser can't
 
 | Path | Description |
 |------|-------------|
-| `/config` | Persistent secrets (/config/secrets.env) and application data (/config/data) |
+| `/config` | Persistent configuration (/config/.env) and application data (/config/data) |
 
 ### Ports
 
@@ -183,17 +183,25 @@ proxy, set `TRUST_PROXY=true`.
 Open `<APP_URL>/setup` on first boot to create the initial administrator
 account and register your passkey.
 
-## Encryption key and data
+## Encryption key, data, and CLI recovery
 
-If neither `ENCRYPTION_KEY` nor `ENCRYPTION_KEY_FILE` is set on first start,
-the launcher generates a 32-byte key (`openssl rand -base64 32`) and stores
-it in `/config/secrets.env` (mode `0600`). Back up `/config`: losing
-`ENCRYPTION_KEY` makes encrypted fields in the database unreadable.
+If neither `ENCRYPTION_KEY` nor `ENCRYPTION_KEY_FILE` is set in the
+environment or `/config/.env` on first start, the launcher generates a
+32-byte key (`openssl rand -base64 32`) and stores it in `/config/.env`
+(mode `0600`). Back up `/config`: losing `ENCRYPTION_KEY` makes encrypted
+fields in the database unreadable.
 
 By default Pocket ID uses an embedded SQLite database at
 `/config/data/pocket-id.db` and stores uploads in `/config/data/uploads`.
 To use PostgreSQL instead, set `DB_CONNECTION_STRING` to a
 `postgres://user:password@host:5432/pocket_id` URL.
+
+Pocket ID CLI subcommands (such as account recovery when a passkey is lost)
+run in `/config` as `bsd` via `podman exec`:
+
+```sh
+podman exec pocket-id pocket-id one-time-access-token <username-or-email>
+```
 
 Pocket ID also binds an internal actor listener on port `1414` for
 multi-node clustering; single-instance deployments do not need to publish it.
