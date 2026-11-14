@@ -1,11 +1,11 @@
 {
-  "generated": "2026-11-13T22:12:09Z",
+  "generated": "2026-11-14T22:32:48Z",
   "image": "pocket-id",
   "tags": {
     "latest-amd64": {
       "app_version": "v2.19.2",
       "arch": "amd64",
-      "generated": "2026-11-13T22:10:55Z",
+      "generated": "2026-11-14T22:31:52Z",
       "packages": {
         "dotnet": [],
         "freebsd": [
@@ -1267,7 +1267,7 @@
     "pkg-amd64": {
       "app_version": "2.14.0_3",
       "arch": "amd64",
-      "generated": "2026-11-13T22:11:41Z",
+      "generated": "2026-11-14T22:31:32Z",
       "packages": {
         "dotnet": [],
         "freebsd": [
@@ -2559,9 +2559,9 @@
       }
     },
     "pkg-latest-amd64": {
-      "app_version": "2.14.0_3",
+      "app_version": "2.14.0_4",
       "arch": "amd64",
-      "generated": "2026-11-13T22:11:18Z",
+      "generated": "2026-11-14T22:31:37Z",
       "packages": {
         "dotnet": [],
         "freebsd": [
@@ -2836,7 +2836,7 @@
               "BSD2CLAUSE"
             ],
             "name": "pocket-id",
-            "version": "2.14.0_3"
+            "version": "2.14.0_4"
           }
         ],
         "go": [
@@ -3828,7 +3828,7 @@
           {
             "name": "stdlib",
             "purl": "",
-            "version": "v1.27.3"
+            "version": "v1.27.4"
           }
         ],
         "java": [],
