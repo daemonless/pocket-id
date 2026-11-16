@@ -1,11 +1,11 @@
 {
-  "generated": "2026-11-15T13:26:21Z",
+  "generated": "2026-11-16T11:03:17Z",
   "image": "pocket-id",
   "tags": {
     "latest-aarch64": {
-      "app_version": "v2.19.2",
+      "app_version": "v2.19.3",
       "arch": "aarch64",
-      "generated": "2026-11-15T13:23:56Z",
+      "generated": "2026-11-16T11:01:03Z",
       "packages": {
         "dotnet": [],
         "freebsd": [
@@ -1130,7 +1130,12 @@
           {
             "name": "golang.org/x/crypto",
             "purl": "",
-            "version": "v0.58.0"
+            "version": "v0.59.0"
+          },
+          {
+            "name": "golang.org/x/crypto/openpgp",
+            "purl": "",
+            "version": "v0.1.0-deprecated"
           },
           {
             "name": "golang.org/x/exp",
@@ -1155,17 +1160,17 @@
           {
             "name": "golang.org/x/sync",
             "purl": "",
-            "version": "v0.24.0"
+            "version": "v0.25.0"
           },
           {
             "name": "golang.org/x/sys",
             "purl": "",
-            "version": "v0.49.0"
+            "version": "v0.50.0"
           },
           {
             "name": "golang.org/x/text",
             "purl": "",
-            "version": "v0.43.0"
+            "version": "v0.44.0"
           },
           {
             "name": "golang.org/x/time",
@@ -1240,7 +1245,7 @@
           {
             "name": "stdlib",
             "purl": "",
-            "version": "v1.27.3"
+            "version": "v1.27.4"
           }
         ],
         "java": [],
@@ -1254,20 +1259,20 @@
       "summary": {
         "dotnet": 0,
         "freebsd": 38,
-        "go": 193,
+        "go": 194,
         "java": 0,
         "node": 0,
         "php": 0,
         "python": 0,
         "ruby": 0,
         "rust": 0,
-        "total": 231
+        "total": 232
       }
     },
     "pkg-aarch64": {
       "app_version": "2.14.0_3",
       "arch": "aarch64",
-      "generated": "2026-11-15T13:24:00Z",
+      "generated": "2026-11-16T11:01:06Z",
       "packages": {
         "dotnet": [],
         "freebsd": [
@@ -2561,7 +2566,7 @@
     "pkg-latest-aarch64": {
       "app_version": "2.14.0_3",
       "arch": "aarch64",
-      "generated": "2026-11-15T13:24:04Z",
+      "generated": "2026-11-16T11:01:10Z",
       "packages": {
         "dotnet": [],
         "freebsd": [
