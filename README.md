@@ -41,7 +41,7 @@ services:
       - PUID=1000  # User ID for the application process
       - PGID=1000  # Group ID for the application process
       - TZ=UTC  # Timezone for the container
-      - APP_URL=http://localhost:1411  # Public URL of Pocket ID as reached by the browser (passkeys bind to this origin)
+      - APP_URL=  # Public HTTPS URL of Pocket ID, e.g. https://auth.example.com (passkeys require a domain name, not an IP)
       - TRUST_PROXY=false  # Trust X-Forwarded-* headers when running behind a reverse proxy
       # - ENCRYPTION_KEY=  # Key used to encrypt stored secrets (`openssl rand -base64 32`); generated into /config/.env on first start if unset
       # - DB_CONNECTION_STRING=  # Database connection string (defaults to SQLite at data/pocket-id.db under /config, or postgres://user:pass@host:5432/dbname)
@@ -67,7 +67,7 @@ DIRECTOR_PROJECT=pocket-id
 PUID=1000
 PGID=1000
 TZ=UTC
-APP_URL=http://localhost:1411
+APP_URL=
 TRUST_PROXY=false
 ```
 
@@ -136,7 +136,7 @@ services:
       - PUID=1000
       - PGID=1000
       - TZ=UTC
-      - APP_URL=http://localhost:1411
+      - APP_URL=
       - TRUST_PROXY=false
     volumes:
       - "/containers/pocket-id:/config"
@@ -154,7 +154,7 @@ Open `http://<server>:1411` from another machine (the server's own browser can't
 | `PUID` | `1000` | User ID for the application process |
 | `PGID` | `1000` | Group ID for the application process |
 | `TZ` | `UTC` | Timezone for the container |
-| `APP_URL` | `http://localhost:1411` | Public URL of Pocket ID as reached by the browser (passkeys bind to this origin) |
+| `APP_URL` | `` | Public HTTPS URL of Pocket ID, e.g. https://auth.example.com (passkeys require a domain name, not an IP) |
 | `TRUST_PROXY` | `false` | Trust X-Forwarded-* headers when running behind a reverse proxy |
 | `ENCRYPTION_KEY` | `<ENCRYPTION_KEY>` | Key used to encrypt stored secrets (`openssl rand -base64 32`); generated into /config/.env on first start if unset |
 | `DB_CONNECTION_STRING` | `` | Database connection string (defaults to SQLite at data/pocket-id.db under /config, or postgres://user:pass@host:5432/dbname) |
