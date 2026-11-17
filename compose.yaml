@@ -20,8 +20,7 @@ x-daemonless:
       PGID: "Group ID for the application process"
       TZ: "Timezone for the container"
       APP_URL:
-        desc: "Public URL of Pocket ID as reached by the browser (passkeys bind to this origin)"
-        public_url: true
+        desc: "Public HTTPS URL of Pocket ID, e.g. https://auth.example.com (passkeys require a domain name, not an IP)"
         level: primary
       ENCRYPTION_KEY:
         desc: "Key used to encrypt stored secrets (`openssl rand -base64 32`); generated into /config/.env on first start if unset"
@@ -92,7 +91,7 @@ services:
       - PUID=1000
       - PGID=1000
       - TZ=UTC
-      - APP_URL=http://localhost:1411
+      - APP_URL=
       - TRUST_PROXY=false
 
     volumes:
