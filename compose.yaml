@@ -21,6 +21,7 @@ x-daemonless:
       TZ: "Timezone for the container"
       APP_URL:
         desc: "Public HTTPS URL of Pocket ID, e.g. https://auth.example.com (passkeys require a domain name, not an IP)"
+        public_url: domain
         level: primary
       ENCRYPTION_KEY:
         desc: "Key used to encrypt stored secrets (`openssl rand -base64 32`); generated into /config/.env on first start if unset"
@@ -29,6 +30,7 @@ x-daemonless:
       TRUST_PROXY:
         desc: "Trust X-Forwarded-* headers when running behind a reverse proxy"
         optional: true
+        behind_proxy: "true"
         level: options
       DB_CONNECTION_STRING:
         desc: "Database connection string (defaults to SQLite at data/pocket-id.db under /config, or postgres://user:pass@host:5432/dbname)"
